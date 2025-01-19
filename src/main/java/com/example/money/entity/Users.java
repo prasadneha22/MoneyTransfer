@@ -13,6 +13,28 @@ public class Users {
     private String name;
     private String password;
 
+    @Column(nullable = false)
+    private Double balance = 0.0;
+
+    public Double getBalance() {
+        return balance;
+    }
+
+    public void setBalance(Double balance) {
+        this.balance = balance;
+    }
+
+    @Override
+    public String toString() {
+        return "Users{" +
+                "id=" + id +
+                ", email='" + email + '\'' +
+                ", name='" + name + '\'' +
+                ", password='" + password + '\'' +
+                ", balance=" + balance +
+                '}';
+    }
+
     public Users() {
     }
 
@@ -48,20 +70,11 @@ public class Users {
         this.password = password;
     }
 
-    @Override
-    public String toString() {
-        return "Users{" +
-                "id=" + id +
-                ", email='" + email + '\'' +
-                ", name='" + name + '\'' +
-                ", password='" + password + '\'' +
-                '}';
-    }
-
-    public Users(Integer id, String email, String name, String password) {
+    public Users(Integer id, String email, String name, String password, Double balance) {
         this.id = id;
         this.email = email;
         this.name = name;
         this.password = password;
+        this.balance = balance;
     }
 }
