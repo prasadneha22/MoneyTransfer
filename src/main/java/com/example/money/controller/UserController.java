@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 public class UserController {
 
@@ -23,16 +25,20 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginDto loginDto){
-        String result = userService.verify(new Users(null,loginDto.getEmail(),null,loginDto.getPassword(),null));
-        if(result.startsWith("fail")){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+    public ResponseEntity<Map<String,Object>> login (@RequestBody LoginDto loginDto){
+        Map<String,Object> response = userService.verify(loginDto);
+        if(response.containsKey("Error")){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/add-money")
     public ResponseEntity<String> addMoney(@RequestBody AddMoneyDto addMoneyDto, @RequestHeader("Authorization") String token){
+
+        if(addMoneyDto.getAmount() == null || addMoneyDto.getAmount() <= 0){
+            return ResponseEntity.badRequest().body("Amount must be greater than zero and not null.");
+        }
         try{
             String response = userService.addMoney(token, addMoneyDto.getAmount());
             return ResponseEntity.ok(response);
@@ -41,6 +47,17 @@ public class UserController {
         }catch (RuntimeException e){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
+    }
+
+    @GetMapping("/balance")
+    public ResponseEntity<Double> getMyBalance(@RequestHeader("Authorization") String token){
+        if(token.startsWith("Bearer ")){
+            token = token.substring(7);
+        }
+
+        Double balance = userService.getBalance(token);
+
+        return ResponseEntity.ok(balance);
     }
 
 

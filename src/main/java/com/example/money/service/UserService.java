@@ -1,5 +1,6 @@
 package com.example.money.service;
 
+import com.example.money.DTO.LoginDto;
 import com.example.money.DTO.UserDto;
 import com.example.money.entity.Users;
 import com.example.money.repository.UserRepository;
@@ -11,6 +12,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class UserService {
@@ -36,39 +40,67 @@ public class UserService {
     }
 
 
-    public String verify(Users users) {
-        try {
-            // Authenticate the user using AuthenticationManager
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(users.getEmail(), users.getPassword())
-            );
 
-            if (authentication.isAuthenticated()) {
-                return jwtService.generateToken(users.getEmail());
-            }
-        } catch (Exception e) {
-            return "fail " + e.getMessage(); // Authentication failed, you can log the exception for more info
-        }
-        return "fail";
-    }
 
     public String addMoney(String token, Double amount) {
         if(amount <=0){
-            throw new IllegalArgumentException("AMount must be greater than zero.");
+            throw new IllegalArgumentException("Amount must be greater than zero.");
         }
 
-        String email = jwtService.extractEmail(token.substring(7));
-
-        Users user = userRepository.findByEmail(email);
-        if(user == null){
-            throw new RuntimeException("User not found!!");
-        }
+        Integer userId = jwtService.extractUserId(token.substring(7));
+        Users user = userRepository.findById(userId)
+                .orElseThrow(()->new RuntimeException("User not found!!"));
 
         user.setBalance(user.getBalance() + amount);
-
         userRepository.save(user);
 
-        return "Money added to your Account Successfully. New Balance: " + user.getBalance();
+        return "Money added to your account successfully. New Balance: " + user.getBalance();
+
+
+    }
+
+    public Double getBalance(String token) {
+        Integer id = jwtService.extractUserId(token);
+
+        Users user = userRepository.findById(id)
+                .orElseThrow(()->new RuntimeException("User not found!!"));
+
+        return user.getBalance();
+
+    }
+
+    public Map<String, Object> verify(LoginDto loginDto) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // Authenticate user
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
+            );
+
+            if (authentication.isAuthenticated()) {
+                Users user = userRepository.findByEmail(loginDto.getEmail());
+                if (user == null) {
+                    response.put("error", "User not found!");
+                    return response;
+                }
+
+                // Generate JWT token with user details
+                String token = jwtService.generateToken(user);
+
+                // Return user details and token
+                response.put("id", user.getId());
+                response.put("email", user.getEmail());
+                response.put("name", user.getName());
+                response.put("balance", user.getBalance());
+                response.put("token", token);
+                return response;
+            }
+        } catch (Exception e) {
+            response.put("error", "Invalid credentials!");
+        }
+
+        return response;
     }
 //
 

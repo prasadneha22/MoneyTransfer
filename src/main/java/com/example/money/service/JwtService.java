@@ -1,5 +1,6 @@
 package com.example.money.service;
 
+import com.example.money.entity.Users;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -30,19 +31,22 @@ public class JwtService {
         }
     }
 
-    public String generateToken(String email ) {
+    public String generateToken(Users users) {
 
-        Map<String, Objects> claims = new HashMap<>();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("id",users.getId());
+        claims.put("email",users.getEmail());
+        claims.put("name",users.getName());
+
 
         return Jwts.builder()
-                .claims()
-                .add(claims)
-                .subject(email)
+                .claims(claims)
+                .subject(users.getEmail())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + 43200000))
-                .and()
                 .signWith(getKey())
                 .compact();
+
     }
 
     private SecretKey getKey(){
@@ -55,6 +59,10 @@ public class JwtService {
     public String extractEmail(String token) {
 
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public Integer extractUserId(String token){
+        return extractClaim(token,claims ->Integer.parseInt(claims.get("id").toString()));
     }
 
     private <T> T extractClaim(String token, Function<Claims,T> claimResolver){
